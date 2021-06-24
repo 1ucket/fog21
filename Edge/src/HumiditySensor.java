@@ -1,4 +1,3 @@
-
 import java.util.*;
 
 public class HumiditySensor extends Sensor {
@@ -7,13 +6,19 @@ public class HumiditySensor extends Sensor {
 	Random r = new Random();
 	double lastValue = 40;
 	
-	public double getData()
+	public String getData()
 	{
 		lastValue = lastValue + r.nextGaussian()*0.01;
-		return Utils.clamp(lastValue, 0, 100);
+		double doubleValue = Utils.clamp(lastValue, 0, 100);
+                String value = String.valueOf(doubleValue);
+                return value;
 	}
 	public dataSource getType()
 	{
 		return dataSource.HUMIDITY;
 	}
+        
+        public String toString(){
+            return "HUMIDITY";
+        }
 }

@@ -6,14 +6,20 @@ public class MoistureSensor extends Sensor {
 	double lastValue = center;
 	Random r = new Random();
 	
-	public double getData()
+	public String getData()
 	{
 		lastValue = lastValue + r.nextGaussian() * (Math.abs(lastValue - center));
-		return Utils.clamp(lastValue, 0, 10);
+		double doubleValue = Utils.clamp(lastValue, 0, 10);
+                String value = String.valueOf(doubleValue);
+                return value;
 	}
 	
 	public dataSource getType()
 	{
 		return dataSource.MOISTURE;
 	}
+        
+        public String toString(){
+            return "MOISTURE";
+        }
 }
