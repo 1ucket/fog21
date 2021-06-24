@@ -1,5 +1,8 @@
 import java.util.*;
 import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
+
 import java.io.*;
 import java.net.*;
 
@@ -15,6 +18,8 @@ public class Edge {
     private int ID;
     private String name;
     private int[] location = new int[2];
+    private JSONParser jsonparser = new JSONParser();
+    private int IOtimeout = 500; //timeout in ms
 
     boolean connected;
 
@@ -36,22 +41,25 @@ public class Edge {
                 connect();
             }
             String a = inputstream.readUTF();
-            System.out.println(a);
 
             // turn received message into String
             byte[] utf8Bytes = a.getBytes("UTF8");
             String str = new String(utf8Bytes, "UTF8");
-
-            // check if received object is from a previous session or nor
-            if (str.contains("false")) {
+            JSONObject jsonObject = (JSONObject) jsonparser.parse(str);
+            
+            // if received object is from a previous session then acknowledge
+            if (!(boolean) jsonObject.get("prev")) {
                 outputstream.writeUTF("OK");
-            } else {
-                System.out.println("prev");
             }
+            System.out.println(jsonObject);
+            
 
-            //System.out.println(inputstream.readUTF());
             return true;
-        } catch (Exception e) {
+    	} catch (ParseException err){
+    		System.out.println("JSON Parsing error");
+    		return false;
+        } catch (IOException e) {
+        	System.out.println("Connection lost, attempting reconnect in next cycle");
             connected = false;
             return false;
         }
@@ -73,7 +81,6 @@ public class Edge {
             while (iterator.hasNext()) {
                 DataPoint dp = iterator.next();
                 JSONObject data = dp.getJSON();
-                System.out.println(data);
 
                 outputstream.writeUTF(data.toString());
 
@@ -83,8 +90,9 @@ public class Edge {
 
                 iterator.remove();
             }
-        } catch (Exception e) {
+        } catch (IOException e) {
             connected = false;
+            System.out.println("Connection lost, attempting reconnect in next cycle");
             return false;
         }
         return true;
@@ -92,16 +100,18 @@ public class Edge {
 
     private void connect() throws IOException {
         InetAddress address = InetAddress.getByName(ip);
-        socket = new Socket(address, port);
+        socket = new Socket();
+        socket.setSoTimeout(IOtimeout);
+        socket.connect(new InetSocketAddress(address, port), IOtimeout);
         inputstream = new DataInputStream(socket.getInputStream());
         outputstream = new DataOutputStream(socket.getOutputStream());
         System.out.println("connection established");
-//        JSONObject registration = new JSONObject();
-//        registration.put("ID", this.ID);
-//        registration.put("name", this.name);
-//        registration.put("pos", this.location);
-//        System.out.println(registration.toString());
-//        outputstream.writeUTF(registration.toString());
+        JSONObject registration = new JSONObject();
+        registration.put("ID", this.ID);
+        registration.put("name", this.name);
+        registration.put("pos", this.location);
+        System.out.println(registration.toString());
+        outputstream.writeUTF(registration.toString());
         connected = true;
     }
 
@@ -111,8 +121,7 @@ public class Edge {
 
         long lastSent = System.currentTimeMillis();
         while (true) {
-            // establish conection
-            Socket clientSocket;
+            // establish connection
             edge.collectData();
             edge.sendData();
 
