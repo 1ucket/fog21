@@ -56,9 +56,7 @@ class ClientHandler extends Thread {
                 String str = new String(utf8Bytes, "UTF8");
 
                 if (str.equals("OK")) { // get confirmation that JSON object was delivered to edge
-                    System.out.println("In ok schleife");
                     sent++;
-                    System.out.println(sent);
                 } else { // received data is not confirmation message but new data
                     System.out.println(received);
 
@@ -90,12 +88,12 @@ class ClientHandler extends Thread {
                         answ.put("prev", false);
                         String time = Long.toString(System.currentTimeMillis());
                         answ.put("timestamp", time);
-                        System.out.println(answ);
+                        //System.out.println(answ);
 
                         storage.putSendOff(answ); // save new JSON in storage
 
                         dos.writeUTF(answ.toString());
-                        System.out.println(storage.getSendOff().size());
+                        //System.out.println(storage.getSendOff().size());
 
                     } catch (ParseException pe) {
                         System.out.println("position: " + pe.getPosition());
@@ -106,11 +104,11 @@ class ClientHandler extends Thread {
                 handleException();
                 try {
                     // closing resources
-                    System.out.println(sendOff.size());
+                    System.out.println("Objects ready to be sent off to client:" + storage.getSendOff().size());
                     this.dis.close();
                     this.dos.close();
                     this.s.close();
-                    System.out.println("now closed");
+                    System.out.println("Thread closed");
                     break;
                 } catch (IOException ex) {
                     ex.printStackTrace();
@@ -140,15 +138,12 @@ class ClientHandler extends Thread {
                 // check that there are JSON objects in the storage from previous session
                 if (!(sendOff.isEmpty())) {
                     sent = storage.getSentVariable();
-                    System.out.println("SENT momentan: " + sent);
                     // all objects created minus the objects that were successfully sent off = objects that previously couldn't be sent to edge
                     for (int i = 0; i < sent; i++) {
                         storage.removeFirst(); // the last objects created are the ones that weren't sent, thus remove all the ones from storage that were successfully sent
-                        System.out.println("Groesse:" + storage.getSendOff().size());
                     }
                     // send all previous objects that weren't sent to edge
                     for (JSONObject j : storage.getSendOff()) {
-                        System.out.println("Alte Objekte:" + storage.getSendOff().size());
                         j.put("prev", true); // tell edge that this is data from a previous session
                         String time = Long.toString(System.currentTimeMillis());
                         j.put("timestamp", time);
@@ -167,9 +162,10 @@ class ClientHandler extends Thread {
     private void handleException() {
         // how to proceed after connection to edge is lost
         storage.putSentVariable(sent); // store the number of successfully sent objects
+        System.out.println("Objects arrived at client:" + sent);
         if (!(unavailable.contains(ip))) {
             storage.putUnavailable(ip); // store ip address of edge
-            System.out.println("unavailable now");
+            System.out.println("Client is unavailable");
         }
     }
 }
